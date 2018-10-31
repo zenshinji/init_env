@@ -1,0 +1,175 @@
+# -*- mode: org; coding: utf-8 -*-
+#+TITLE: Environment Initialization
+#+Time-stamp: <2018-10-31 09:31:48 paulj>
+#+AUTHOR: Paul Jorgensen
+#+EMAIL: paul@prjorgensen.com
+#+LANGUAGE: en
+#+PROPERTIES: tangle:yes
+
+* Intro
+This file contains my macOS oriented environment setup files.
+* CLI
+My shell of choice is bash, so in here set up my command line environment.
+** bash
+
+*** .bash_profile
+:PROPERTIES:
+:ID:       E55BD62B-6BCF-4E20-AAF8-97016FEBA26C
+:END:
+
+#+begin_src shell :tangle "../.bash_profile"
+#-*- sh -*-
+test -e "${HOME}/.iterm2_shell_integration.bash" && source "${HOME}/.iterm2_shell_integration.bash"
+
+test -e "${HOME}/.bashrc"   && source "${HOME}/.bashrc"
+#+end_src
+*** .bash_ps1
+:PROPERTIES:
+:ID:       35AEC6C9-B377-489A-9C10-548B20444D39
+:END:
+
+#+begin_src shell :tangle "../.bash_ps1"
+#-*- shell -*-
+# Fill with minuses
+# (this is recalculated every time the prompt is shown in function prompt_command):
+fill="--- "
+
+reset_style='\[\033[00m\]'
+status_style=$reset_style'\[\033[0;90m\]' # gray color; use 0;37m for lighter color
+prompt_style=$reset_style
+command_style=$reset_style'\[\033[1;29m\]' # bold black
+# Prompt variable:
+
+OLD_PS1="\[\033[0;33m\][\!]\`if [[ \$? = "0" ]]; then echo "\\[\\033[32m\\]"; else echo "\\[\\033[31m\\]"; fi\`[\u@\h: \`if (( `pwd|wc -c|tr -d " "` > 18 )); then echo "\"\\W\""; else echo "\"\\w\""; fi\`]\$\[\033[0m\]";
+PS1="$status_style"'$fill \t\n'"$prompt_style""$OLD_PS1""$command_style "
+
+# Reset color for command output
+# (this one is invoked every time before a command is executed):
+trap 'echo -ne "\e[0m"' DEBUG
+
+function prompt_command {
+
+# create a $fill of all screen width minus the time string and a space:
+let fillsize=${COLUMNS}-9
+fill=""
+while [ "$fillsize" -gt "0" ]
+do
+fill="-${fill}" # fill with underscores to work on
+let fillsize=${fillsize}-1
+done
+
+# If this is an xterm set the title to user@host:dir
+case "$TERM" in
+xterm*|rxvt*)
+bname=`basename "${PWD/$HOME/~}"`
+echo -ne "\033]0;${bname}: ${USER}@${HOSTNAME}: ${PWD/$HOME/~}\007"
+;;
+,*)
+;;
+esac
+
+}
+PROMPT_COMMAND=prompt_command
+
+#+end_src
+
+*** .bashrc
+:PROPERTIES:
+:ID:       686A386E-4DFD-48F8-8186-99C1558EDFEB
+:END:
+
+#+begin_src shell :tangle "../.bashrc"
+#-*- sh -*-
+export PATH="${HOME}/bin:/opt/local/bin:/opt/local/sbin:$PATH"
+
+set -o emacs
+
+#Support Colors
+export CLICOLOR=1
+
+#history settings: http://blog.sanctum.geek.nz/better-bash-history/
+shopt -s histappend
+HISTFILESIZE=1000000
+HISTSIZE=1000000
+HISTCONTROL=ignoreboth:erasedups
+HISTIGNORE='ls:bg:fg:history:exit'
+HISTTIMEFORMAT='%F %T '
+shopt -s cmdhist
+
+### Load Completion Blocks ###
+if [ -f "/etc/bash_completion" ]; then
+  . "/etc/bash_completion"
+fi
+
+if [ -f "/usr/local/etc/bash_completion.d" ]; then
+    . "/usr/local/etc/bash_completion.d"
+fi
+
+if [ -f "/usr/local/etc/bash_completion" ]; then
+    . "/usr/local/etc/bash_completion"
+fi
+
+if [ -f "/opt/local/etc/profile.d/bash_completion.sh" ]; then
+    . "/opt/local/etc/profile.d/bash_completion.sh"
+fi
+
+export LANG="en_US.UTF-8"
+export LC_CTYPE="en_US.UTF-8"
+export LC_ALL="en_US.UTF-8"
+export EDITOR="$HOME/bin/ee"
+export VISUAL=emacs
+
+test -e "${HOME}/.alias"    && source "${HOME}/.alias"
+test -e "${HOME}/.bash_ps1" && source "${HOME}/.bash_ps1"
+#+end_src
+
+*** .alias
+:PROPERTIES:
+:ID:       BB1A6688-A6C9-4AA9-A727-B608DC080CEB
+:END:
+
+#+begin_src shell :tangle "../.alias"
+#-*- sh -*-
+alias cd..="cd .."
+alias l="ls -alFG"
+alias lp="ls -p"
+alias h=history
+alias kp="ps auxwww"
+alias getint="ifconfig | grep -B 6 'status: active' | head -n 1 | cut -d : -f 1"
+alias cp='cp -iv'                           # Preferred 'cp' implementation
+alias mv='mv -iv'                           # Preferred 'mv' implementation
+alias mkdir='mkdir -pv'                     # Preferred 'mkdir' implementation
+alias ll='ls -FGlAhp'                       # Preferred 'ls' implementation
+alias less='less -FSRXc'                    # Preferred 'less' implementation
+cd() { builtin cd "$@"; ll; }               # Always list directory contents upon 'cd'
+alias cd..='cd ../'                          # Go back 1 directory level (for fast typers)
+alias ..='cd ../'                            # Go back 1 directory level
+alias ...='cd ../../'                        # Go back 2 directory levels
+alias .3='cd ../../../'                      # Go back 3 directory levels
+alias .4='cd ../../../../'                   # Go back 4 directory levels
+alias .5='cd ../../../../../'                 # Go back 5 directory levels
+alias .6='cd ../../../../../../'              # Go back 6 directory levels
+alias edit='subl'                           # edit:         Opens any file in sublime editor
+alias f='open -a Finder ./'                 # f:            Opens current directory in MacOS Finder
+alias ~="cd ~"                              # ~:            Go Home
+alias c='clear'                             # c:            Clear terminal display
+alias which='type -all'                     # which:        Find executables
+alias path='echo -e ${PATH//:/\\n}'         # path:         Echo all executable Paths
+alias show_options='shopt'                  # Show_options: display bash options settings
+alias fix_stty='stty sane'                  # fix_stty:     Restore terminal settings when screwed up
+alias cic='set completion-ignore-case On'   # cic:          Make tab-completion case-insensitive
+mcd () { mkdir -p "$1" && cd "$1"; }        # mcd:          Makes new Dir and jumps inside
+trash () { command mv "$@" ~/.Trash ; }     # trash:        Moves a file to the MacOS trash
+ql () { qlmanage -p "$*" >& /dev/null; }    # ql:           Opens any file in MacOS Quicklook Preview
+alias DT='tee ~/Desktop/terminalOut.txt'    # DT:           Pipe content to file on MacOS Desktop
+
+#   lr:  Full Recursive Directory Listing
+#   ------------------------------------------
+alias lr='ls -R | grep ":$" | sed -e '\''s/:$//'\'' -e '\''s/[^-][^\/]*\//--/g'\'' -e '\''s/^/   /'\'' -e '\''s/-/|/'\'' | less'
+
+#+end_src
+
+*** .initrc
+Not yet
+*** .bash_logout
+Not yet
